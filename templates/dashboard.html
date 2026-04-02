@@ -6,6 +6,8 @@
     <title>Dashboard | LeadSense AI</title>
     <!-- Modern Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
@@ -319,7 +321,7 @@
                 idTd.innerText = row.id;
 
                 const nameTd = document.createElement("td");
-                nameTd.innerText = row.name || "-";
+                nameTd.innerHTML = `<strong>${row.name || "-"}</strong> <br><span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt"></i> ${row.location || "Unknown District"}</span>`;
 
                 const phoneTd = document.createElement("td");
                 phoneTd.innerText = row.phone || "-";
@@ -337,9 +339,9 @@
 
                 const socialsTd = document.createElement("td");
                 let socialHtml = "";
-                if (row.instagram) socialHtml += `<a href="${row.instagram}" target="_blank" style="margin-right:5px; color:#e1306c;">IG</a>`;
-                if (row.facebook) socialHtml += `<a href="${row.facebook}" target="_blank" style="margin-right:5px; color:#1877f2;">FB</a>`;
-                if (row.linkedin) socialHtml += `<a href="${row.linkedin}" target="_blank" style="margin-right:5px; color:#0077b5;">IN</a>`;
+                if (row.instagram) socialHtml += `<a href="${row.instagram}" target="_blank" style="margin-right:10px; color:#e1306c; font-size:1.3rem;"><i class="fab fa-instagram"></i></a>`;
+                if (row.facebook) socialHtml += `<a href="${row.facebook}" target="_blank" style="margin-right:10px; color:#1877f2; font-size:1.3rem;"><i class="fab fa-facebook"></i></a>`;
+                if (row.linkedin) socialHtml += `<a href="${row.linkedin}" target="_blank" style="margin-right:10px; color:#0077b5; font-size:1.3rem;"><i class="fab fa-linkedin"></i></a>`;
                 socialsTd.innerHTML = socialHtml || "-";
 
                 const webTd = document.createElement("td");
@@ -370,6 +372,7 @@
             const filtered = allLeads.filter(lead => {
                 return (
                     (lead.name && lead.name.toLowerCase().includes(query)) ||
+                    (lead.location && lead.location.toLowerCase().includes(query)) ||
                     (lead.website && lead.website.toLowerCase().includes(query)) ||
                     (lead.email && lead.email.toLowerCase().includes(query))
                 );

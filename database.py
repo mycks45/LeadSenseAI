@@ -18,6 +18,7 @@ def init_db():
             instagram TEXT,
             facebook TEXT,
             linkedin TEXT,
+            location TEXT,
             UNIQUE(name, website)
         )
     ''')
@@ -33,14 +34,15 @@ def save_leads(leads):
     
     for lead in leads:
         cursor.execute('''
-            INSERT INTO leads (name, phone, email, website, instagram, facebook, linkedin)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO leads (name, phone, email, website, instagram, facebook, linkedin, location)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(name, website) DO UPDATE SET
                 phone=excluded.phone,
                 email=excluded.email,
                 instagram=excluded.instagram,
                 facebook=excluded.facebook,
-                linkedin=excluded.linkedin
+                linkedin=excluded.linkedin,
+                location=excluded.location
         ''', (
             lead.get('Name', ''),
             lead.get('Phone', ''),
@@ -48,7 +50,8 @@ def save_leads(leads):
             lead.get('Website', ''),
             lead.get('Instagram', ''),
             lead.get('Facebook', ''),
-            lead.get('LinkedIn', '')
+            lead.get('LinkedIn', ''),
+            lead.get('Location', '')
         ))
         
     conn.commit()

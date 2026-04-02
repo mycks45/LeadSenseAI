@@ -197,7 +197,8 @@ async def scrape_google_maps(location, keyword="MBBS abroad consultant", log_cal
                     "Email": email,
                     "Instagram": socials["Instagram"],
                     "Facebook": socials["Facebook"],
-                    "LinkedIn": socials["LinkedIn"]
+                    "LinkedIn": socials["LinkedIn"],
+                    "Location": location
                 })
                 
             except Exception as e:
