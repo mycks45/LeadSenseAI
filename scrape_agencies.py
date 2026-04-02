@@ -82,7 +82,17 @@ async def scrape_google_maps(location, keyword="MBBS abroad consultant", log_cal
         await log_callback(f"Searching for: '{query}'")
     
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--single-process",
+                "--no-zygote",
+            ]
+        )
         # We need geolocation or setting locale to India to get better Indian results
         context = await browser.new_context(
             viewport={'width': 1280, 'height': 800},
