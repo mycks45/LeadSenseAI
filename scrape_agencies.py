@@ -163,7 +163,8 @@ async def scrape_google_maps(location, keyword="MBBS abroad consultant", log_cal
                 # Attempt to find phone via the tooltip text
                 phone_loc = page.locator('[data-tooltip="Copy phone number"]')
                 if await phone_loc.count() > 0:
-                    phone = (await phone_loc.first.inner_text()).strip()
+                    raw_phone = await phone_loc.first.inner_text()
+                    phone = re.sub(r'[^\d\+\-\s\(\)]', '', raw_phone).strip()
                 
                 website = ""
                 # Attempt to find website link via tooltip text

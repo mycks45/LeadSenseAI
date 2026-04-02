@@ -529,7 +529,7 @@
                 nameTd.innerText = row.Name || "Unknown";
 
                 const phoneTd = document.createElement("td");
-                phoneTd.innerText = (row.Phone || "-").replace(/[\n\r]+/g, ' ').trim();
+                phoneTd.innerText = (row.Phone || "-").replace(/[^\d\+\-\s\(\)]/g, '').replace(/[\n\r]+/g, ' ').trim();
                 phoneTd.style.whiteSpace = "nowrap";
 
                 const emailTd = document.createElement("td");

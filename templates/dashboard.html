@@ -358,7 +358,7 @@
                 if (!row.phone || row.phone === "-" || row.phone.trim() === "") {
                     phoneTd.innerHTML = `<button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addPhone(${row.id})">➕ Phone</button>`;
                 } else {
-                    phoneTd.innerText = row.phone.replace(/[\n\r]+/g, ' ').trim();
+                    phoneTd.innerText = row.phone.replace(/[^\d\+\-\s\(\)]/g, '').replace(/[\n\r]+/g, ' ').trim();
                 }
                 phoneTd.style.whiteSpace = "nowrap";
 
