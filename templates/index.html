@@ -109,7 +109,7 @@
             cursor: not-allowed;
         }
 
-        button.btn {
+        .btn {
             padding: 1rem 2rem;
             border-radius: 12px;
             border: none;
@@ -119,22 +119,36 @@
             transition: all 0.3s ease;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             color: white;
+            text-decoration: none;
             box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+            display: inline-block;
         }
 
-        button.btn:hover {
+        .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+            color: white;
         }
 
-        button.btn:active {
+        .btn:active {
             transform: translateY(0);
         }
 
-        button.btn:disabled {
+        .btn:disabled {
             opacity: 0.7;
             cursor: not-allowed;
             transform: none;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: none;
+        }
+        
+        .btn-outline:hover {
+            background: rgba(59, 130, 246, 0.1);
         }
 
         /* Loader */
@@ -312,7 +326,7 @@
                 <h1 style="margin-bottom: 0.5rem; font-size: 2.5rem;">LeadSense AI</h1>
                 <p class="subtitle">Extract B2B Medical Abroad Agencies instantly.</p>
             </div>
-            <a href="/dashboard" class="btn" style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--accent-primary); box-shadow: none; color: white;">🗄️ Dashboard</a>
+            <a href="/dashboard" class="btn btn-outline" style="padding: 0.8rem 1.5rem;">🗄️ Dashboard</a>
         </header>
 
         <section class="glass-panel">
