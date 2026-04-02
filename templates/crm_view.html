@@ -399,6 +399,13 @@
                     <button class="btn" onclick="automateMOU()" id="mouBtn" style="width: 100%;"><i class="fas fa-check-circle"></i> Mark MOU Step Complete</button>
                 `;
             }
+            else if (stage === 3) {
+                panel.innerHTML = `
+                    <h2>Step 4: Await Signed MOU</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Have they returned the physically/digitally signed MOU?</p>
+                    <button class="btn" style="background: var(--success);" onclick="updateStage(4)"><i class="fas fa-file-signature"></i> Mark MOU Signed</button>
+                `;
+            }
             else if (stage === 4) {
                 panel.innerHTML = `
                     <h2>Step 5: Send Toolkit & Acknowledgement</h2>
