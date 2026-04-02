@@ -93,15 +93,21 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
+            align-items: stretch;
         }
         .stat-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 1.5rem 0.5rem;
             text-align: center;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
         }
         .stat-value {
             font-size: 2.5rem;
@@ -115,6 +121,7 @@
             letter-spacing: 1px;
             margin-top: 0.5rem;
             font-weight: 600;
+            line-height: 1.4;
         }
 
         /* Glassmorphism Panel */
@@ -284,7 +291,7 @@
 
         <h3 style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">CRM Pipeline Stages</h3>
         
-        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 1rem;">
             <div class="stat-card clickable-tile active-filter" onclick="filterByStage(null)" id="tile-all">
                 <div class="stat-value" id="statStageAll" style="font-size: 1.8rem;">0</div>
                 <div class="stat-label">All Leads</div>
