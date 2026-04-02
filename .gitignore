@@ -1,0 +1,10 @@
+# Environments
+venv/
+__pycache__/
+
+# Data
+*.csv
+*agencies.csv
+
+# Playwright cache (if generated locally)
+.playwright/
