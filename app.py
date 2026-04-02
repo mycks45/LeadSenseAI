@@ -9,6 +9,11 @@ import csv
 
 from scrape_agencies import scrape_google_maps
 import database
+from datetime import datetime
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 
 app = FastAPI()
 
@@ -46,6 +51,15 @@ class BulkDeleteRequest(BaseModel):
 
 class UpdatePhoneRequest(BaseModel):
     phone: str
+
+class UpdateStageRequest(BaseModel):
+    stage: int
+
+class UpdateEmailRequest(BaseModel):
+    email: str
+
+class ContactRequest(BaseModel):
+    timestamp: str
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -142,6 +156,81 @@ def api_delete_bulk(req: BulkDeleteRequest):
 def api_update_phone(lead_id: int, req: UpdatePhoneRequest):
     try:
         database.update_lead_phone(lead_id, req.phone)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+# --- CRM Endpoints ---
+
+@app.get("/crm/{lead_id}", response_class=HTMLResponse)
+async def view_crm_lead(request: Request, lead_id: int):
+    # Pass basic param down, rest handled via API or jinja if needed
+    return templates.TemplateResponse("crm_view.html", {"request": request, "lead_id": lead_id})
+
+@app.get("/api/leads/{lead_id}")
+def api_get_lead(lead_id: int):
+    try:
+        lead = database.get_lead_by_id(lead_id)
+        if lead is None:
+            return {"error": "Lead not found"}
+        return {"success": True, "lead": lead}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/leads/{lead_id}/stage")
+def api_update_stage(lead_id: int, req: UpdateStageRequest):
+    try:
+        database.update_lead_stage(lead_id, req.stage)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.put("/api/leads/{lead_id}/mou_email")
+def api_update_mou_email(lead_id: int, req: UpdateEmailRequest):
+    try:
+        database.update_mou_email(lead_id, req.email)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/leads/{lead_id}/contact")
+def api_update_contact(lead_id: int, req: ContactRequest):
+    try:
+        database.update_last_contacted(lead_id, req.timestamp)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/leads/{lead_id}/send_mou")
+def api_send_mou(lead_id: int):
+    # Dummy Email logic for MOU
+    try:
+        lead = database.get_lead_by_id(lead_id)
+        email_to = lead.get('mou_email') or lead.get('email')
+        if not email_to:
+            return {"error": "No email address found to send MOU."}
+        
+        # MOCK SMTP Logic
+        print(f"[MOCK EMAIL] Sending MOU to {email_to} for lead {lead.get('name')}")
+        # When ready, user can configure smtplib here:
+        # server = smtplib.SMTP('smtp.gmail.com', 587) ...
+        
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/leads/{lead_id}/send_toolkit")
+def api_send_toolkit(lead_id: int):
+    # Dummy Email logic for Toolkit
+    try:
+        lead = database.get_lead_by_id(lead_id)
+        email_to = lead.get('mou_email') or lead.get('email')
+        if not email_to:
+            return {"error": "No email address found to send Toolkit."}
+        
+        # MOCK SMTP Logic
+        print(f"[MOCK EMAIL] Sending Toolkits and Ack to {email_to} for lead {lead.get('name')}")
+        
         return {"success": True}
     except Exception as e:
         return {"error": str(e)}

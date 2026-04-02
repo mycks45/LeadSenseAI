@@ -19,6 +19,9 @@ def init_db():
             facebook TEXT,
             linkedin TEXT,
             location TEXT,
+            crm_stage INTEGER DEFAULT 0,
+            mou_email TEXT DEFAULT '',
+            last_contacted TEXT DEFAULT '',
             UNIQUE(name, website)
         )
     ''')
@@ -87,6 +90,36 @@ def update_lead_phone(lead_id, new_phone):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("UPDATE leads SET phone = ? WHERE id = ?", (new_phone, lead_id))
+    conn.commit()
+    conn.close()
+
+def get_lead_by_id(lead_id):
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM leads WHERE id = ?", (lead_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def update_lead_stage(lead_id, stage):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE leads SET crm_stage = ? WHERE id = ?", (stage, lead_id))
+    conn.commit()
+    conn.close()
+
+def update_mou_email(lead_id, email):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE leads SET mou_email = ? WHERE id = ?", (email, lead_id))
+    conn.commit()
+    conn.close()
+
+def update_last_contacted(lead_id, timestamp):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE leads SET last_contacted = ? WHERE id = ?", (timestamp, lead_id))
     conn.commit()
     conn.close()
 

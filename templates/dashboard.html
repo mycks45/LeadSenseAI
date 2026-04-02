@@ -352,7 +352,7 @@
                 idTd.innerText = row.id;
 
                 const nameTd = document.createElement("td");
-                nameTd.innerHTML = `<strong>${row.name || "-"}</strong> <br><span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt"></i> ${row.location || "Unknown District"}</span>`;
+                nameTd.innerHTML = `<strong><a href="/crm/${row.id}" class="table-link" style="color: var(--text-main); text-decoration: none;">${row.name || "-"}</a></strong> <br><span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt"></i> ${row.location || "Unknown District"}</span>`;
 
                 const phoneTd = document.createElement("td");
                 if (!row.phone || row.phone === "-" || row.phone.trim() === "") {
