@@ -5,8 +5,10 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import os
 import uuid
+import csv
 
 from scrape_agencies import scrape_google_maps
+import database
 
 app = FastAPI()
 
@@ -81,3 +83,35 @@ async def download_file(filename: str):
     if os.path.exists(file_path):
         return FileResponse(path=file_path, filename=filename, media_type='text/csv')
     return {"error": "File not found"}
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+@app.get("/api/leads")
+def api_get_leads():
+    try:
+        leads = database.get_all_leads()
+        return {"success": True, "leads": leads}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/download_all")
+def download_all_leads():
+    try:
+        leads = database.get_all_leads()
+        if not leads:
+            return {"error": "No leads in database."}
+            
+        filename = "leadsense_master_export.csv"
+        filepath = os.path.join(os.getcwd(), filename)
+        
+        with open(filepath, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=leads[0].keys())
+            writer.writeheader()
+            writer.writerows(leads)
+            
+        return FileResponse(path=filepath, filename=filename, media_type='text/csv')
+    except Exception as e:
+        return {"error": str(e)}
+

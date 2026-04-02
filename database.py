@@ -54,5 +54,14 @@ def save_leads(leads):
     conn.commit()
     conn.close()
 
+def get_all_leads():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM leads ORDER BY id DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 # Initialize the config
 init_db()

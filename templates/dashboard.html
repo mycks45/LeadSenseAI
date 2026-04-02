@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | LeadSense AI</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-primary: #3b82f6;
+            --accent-secondary: #8b5cf6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 3rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        button.btn, a.btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+            display: inline-block;
+        }
+        
+        a.btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: none;
+        }
+        
+        a.btn-outline:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .stat-label {
+            color: var(--accent-primary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.5rem;
+            font-weight: 600;
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.6);
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            position: relative;
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.95);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        a.table-link {
+            color: var(--accent-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        a.table-link:hover {
+            color: var(--accent-secondary);
+            text-decoration: underline;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Database Dashboard</h1>
+            <a href="/" class="btn btn-outline">← Back to Scraper</a>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="statAgencies">0</div>
+                <div class="stat-label">Total Agencies</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statEmails">0</div>
+                <div class="stat-label">Emails Scraped</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statSocials">0</div>
+                <div class="stat-label">Social Handles Found</div>
+            </div>
+        </div>
+
+        <section class="glass-panel">
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="Search across agencies, emails, or websites..." onkeyup="filterTable()">
+                <a href="/api/download_all" class="btn">📥 Download Master CSV</a>
+            </div>
+
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Agency Name</th>
+                            <th>Phone Number</th>
+                            <th>Email</th>
+                            <th>Socials</th>
+                            <th>Website</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="6" class="empty-state">Loading database records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let allLeads = [];
+
+        window.onload = async function() {
+            try {
+                const response = await fetch('/api/leads');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allLeads = data.leads;
+                    updateStats();
+                    renderTable(allLeads);
+                } else {
+                    document.getElementById("tableBody").innerHTML = `<tr><td colspan="6" class="empty-state">Failed to load data: ${data.error}</td></tr>`;
+                }
+            } catch (error) {
+                document.getElementById("tableBody").innerHTML = `<tr><td colspan="6" class="empty-state">Error connecting to server.</td></tr>`;
+            }
+        };
+
+        function updateStats() {
+            document.getElementById("statAgencies").innerText = allLeads.length;
+            
+            let emailCount = 0;
+            let socialCount = 0;
+            
+            allLeads.forEach(lead => {
+                if (lead.email && lead.email.trim() !== '') emailCount++;
+                if (lead.instagram) socialCount++;
+                if (lead.facebook) socialCount++;
+                if (lead.linkedin) socialCount++;
+            });
+            
+            document.getElementById("statEmails").innerText = emailCount;
+            document.getElementById("statSocials").innerText = socialCount;
+        }
+
+        function renderTable(leads) {
+            const tbody = document.getElementById("tableBody");
+            
+            if (leads.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No records found. Run a scrape first!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = "";
+            
+            leads.forEach(row => {
+                const tr = document.createElement("tr");
+
+                const idTd = document.createElement("td");
+                idTd.innerText = row.id;
+
+                const nameTd = document.createElement("td");
+                nameTd.innerText = row.name || "-";
+
+                const phoneTd = document.createElement("td");
+                phoneTd.innerText = row.phone || "-";
+
+                const emailTd = document.createElement("td");
+                if (row.email) {
+                    const a = document.createElement("a");
+                    a.href = `mailto:${row.email}`;
+                    a.className = "table-link";
+                    a.innerText = row.email;
+                    emailTd.appendChild(a);
+                } else {
+                    emailTd.innerText = "-";
+                }
+
+                const socialsTd = document.createElement("td");
+                let socialHtml = "";
+                if (row.instagram) socialHtml += `<a href="${row.instagram}" target="_blank" style="margin-right:5px; color:#e1306c;">IG</a>`;
+                if (row.facebook) socialHtml += `<a href="${row.facebook}" target="_blank" style="margin-right:5px; color:#1877f2;">FB</a>`;
+                if (row.linkedin) socialHtml += `<a href="${row.linkedin}" target="_blank" style="margin-right:5px; color:#0077b5;">IN</a>`;
+                socialsTd.innerHTML = socialHtml || "-";
+
+                const webTd = document.createElement("td");
+                if (row.website) {
+                    const a = document.createElement("a");
+                    a.href = row.website;
+                    a.target = "_blank";
+                    a.className = "table-link";
+                    a.innerText = "Visit Site";
+                    webTd.appendChild(a);
+                } else {
+                    webTd.innerText = "-";
+                }
+
+                tr.appendChild(idTd);
+                tr.appendChild(nameTd);
+                tr.appendChild(phoneTd);
+                tr.appendChild(emailTd);
+                tr.appendChild(socialsTd);
+                tr.appendChild(webTd);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const filtered = allLeads.filter(lead => {
+                return (
+                    (lead.name && lead.name.toLowerCase().includes(query)) ||
+                    (lead.website && lead.website.toLowerCase().includes(query)) ||
+                    (lead.email && lead.email.toLowerCase().includes(query))
+                );
+            });
+            renderTable(filtered);
+        }
+    </script>
+</body>
+</html>
