@@ -110,7 +110,10 @@ async def start_scrape(scrape_request: ScrapeRequest):
             "count": len(data["results"])
         }
     except Exception as e:
-        return {"error": str(e)}
+        import traceback
+        err_detail = traceback.format_exc()
+        print(f"[SCRAPE ERROR] {err_detail}")
+        return {"error": f"Scraping crashed: {str(e)}"}
 
 @app.get("/download/{filename}")
 async def download_file(filename: str):
