@@ -4,10 +4,16 @@ import re
 import csv
 import argparse
 from urllib.parse import urlparse
+import database
 
-async def find_email(context, url):
-    """Visit a website and search for an email address."""
+async def find_contact_info(context, url, log_callback=None):
+    """Visit a website and search for an email address and social media links."""
     email = ""
+    socials = {"Instagram": "", "Facebook": "", "LinkedIn": ""}
+    
+    if log_callback:
+        await log_callback(f"Scanning website: {url} ...")
+        
     # Create a new page for the website visit
     page = await context.new_page()
     try:
@@ -42,16 +48,38 @@ async def find_email(context, url):
             if valid_emails:
                 email = valid_emails[0]
                 
+        # 3. Look for social media links
+        all_links = await page.locator('a[href]').all()
+        for link in all_links:
+            try:
+                href = await link.get_attribute('href', timeout=1000)
+                if not href: continue
+                
+                href_lower = href.lower()
+                if 'instagram.com' in href_lower and not socials['Instagram']:
+                    socials['Instagram'] = href
+                elif 'facebook.com' in href_lower and not socials['Facebook']:
+                    socials['Facebook'] = href
+                elif 'linkedin.com' in href_lower and not socials['LinkedIn']:
+                    socials['LinkedIn'] = href
+            except Exception:
+                continue
+                
     except Exception as e:
+        if log_callback:
+            await log_callback(f"[!] Warning checking website {url}")
         print(f"  [!] Error checking website {url}: {e}")
     finally:
         await page.close()
         
-    return email
+    return email, socials
 
-async def scrape_google_maps(location, keyword="MBBS abroad consultant"):
+async def scrape_google_maps(location, keyword="MBBS abroad consultant", log_callback=None):
     query = f"{keyword.strip()} in {location}"
     print(f"Searching Google Maps for: '{query}'")
+    if log_callback:
+        await log_callback(f"Initializing Google Maps engine...")
+        await log_callback(f"Searching for: '{query}'")
     
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -79,15 +107,21 @@ async def scrape_google_maps(location, keyword="MBBS abroad consultant"):
             pass
             
         print("Waiting for results to load...")
+        if log_callback:
+            await log_callback(f"Waiting for results to load...")
+            
         try:
             # Wait for the feed container to load
             await page.wait_for_selector('div[role="feed"]', timeout=20000)
         except Exception:
-            print("Could not find the results feed. They might have changed the HTML structure or returned no results.")
+            msg = "Could not find the results feed. They might have returned no results."
+            print(msg)
+            if log_callback: await log_callback(msg)
             await browser.close()
-            return
+            return {"results": [], "filename": ""}
             
         print("Scrolling to load more results...")
+        if log_callback: await log_callback("Scrolling to load all available results...")
         feed_selector = 'div[role="feed"]'
         
         # Scroll the feed aggressively
@@ -110,6 +144,9 @@ async def scrape_google_maps(location, keyword="MBBS abroad consultant"):
                 urls_to_visit.append(href)
                 
         print(f"Found {len(urls_to_visit)} place links. Extracting details (this will take a moment)...")
+        if log_callback:
+            await log_callback(f"Found {len(urls_to_visit)} agency links! Extracting detailed profiles...")
+            
         results = []
         
         # Process each place
@@ -141,18 +178,26 @@ async def scrape_google_maps(location, keyword="MBBS abroad consultant"):
                         website = await alt_web_loc.first.get_attribute('href')
                         
                 print(f"Scraped -> {name} | Phone: {phone} | Web: {website}")
+                if log_callback:
+                    await log_callback(f"Extracted: {name}")
                 
                 email = ""
+                socials = {"Instagram": "", "Facebook": "", "LinkedIn": ""}
+                
                 if website and website.startswith('http'):
-                    email = await find_email(context, website)
+                    email, socials = await find_contact_info(context, website, log_callback)
                     if email:
                         print(f"  -> Found Email: {email}")
+                        if log_callback: await log_callback(f"  -> Found Email: {email}")
                         
                 results.append({
                     "Name": name,
                     "Phone": phone,
                     "Website": website,
-                    "Email": email
+                    "Email": email,
+                    "Instagram": socials["Instagram"],
+                    "Facebook": socials["Facebook"],
+                    "LinkedIn": socials["LinkedIn"]
                 })
                 
             except Exception as e:
@@ -162,15 +207,26 @@ async def scrape_google_maps(location, keyword="MBBS abroad consultant"):
         
         if not results:
             print("No data was successfully scraped.")
+            if log_callback: await log_callback("Scraping finished but no valid agencies were found.")
             return {"results": [], "filename": ""}
             
         output_file = f"{location.replace(' ', '_').lower()}_agencies.csv"
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=["Name", "Phone", "Website", "Email"])
+            writer = csv.DictWriter(f, fieldnames=["Name", "Phone", "Website", "Email", "Instagram", "Facebook", "LinkedIn"])
             writer.writeheader()
             writer.writerows(results)
             
-        print(f"\nSuccess! Saved {len(results)} agencies to {output_file}")
+        # Save to SQLite database
+        try:
+            database.save_leads(results)
+            if log_callback: await log_callback("Data persistently saved to Database!")
+        except Exception as e:
+            print(f"Failed storing to db: {e}")
+            
+        str_msg = f"\nSuccess! Saved {len(results)} agencies to {output_file}"
+        print(str_msg)
+        if log_callback: await log_callback(str_msg)
+        
         return {"results": results, "filename": output_file}
 
 

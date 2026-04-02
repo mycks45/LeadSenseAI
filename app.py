@@ -1,13 +1,28 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import os
+import uuid
 
 from scrape_agencies import scrape_google_maps
 
 app = FastAPI()
+
+active_sockets: dict = {}
+
+@app.websocket("/ws/scrape/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    await websocket.accept()
+    active_sockets[client_id] = websocket
+    try:
+        while True:
+            # We don't expect messages from client, just keeping it alive
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        if client_id in active_sockets:
+            del active_sockets[client_id]
 
 # Make sure we have a templates directory and a static directory
 os.makedirs("templates", exist_ok=True)
@@ -21,6 +36,7 @@ templates = Jinja2Templates(directory="templates")
 class ScrapeRequest(BaseModel):
     location: str
     keyword: str
+    client_id: str
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -30,13 +46,23 @@ async def read_root(request: Request):
 async def start_scrape(scrape_request: ScrapeRequest):
     location = scrape_request.location.strip()
     keyword = scrape_request.keyword.strip()
+    client_id = scrape_request.client_id
+    
     if not location:
         return {"error": "Location cannot be empty"}
     if not keyword:
         return {"error": "Keyword cannot be empty"}
         
+    async def log_callback(msg: str):
+        ws = active_sockets.get(client_id)
+        if ws:
+            try:
+                await ws.send_text(msg)
+            except Exception:
+                pass
+                
     try:
-        data = await scrape_google_maps(location, keyword)
+        data = await scrape_google_maps(location, keyword, log_callback)
         if not data or not data.get("filename"):
             return {"error": "Failed to scrape any data or zero results found."}
             

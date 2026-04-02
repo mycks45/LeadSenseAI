@@ -266,6 +266,42 @@
             text-decoration: underline;
         }
 
+        /* Terminal Window */
+        .terminal-container {
+            margin-top: 1.5rem;
+            background: #0b0f19;
+            border-radius: 8px;
+            border: 1px solid #1e293b;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            display: none;
+            width: 100%;
+        }
+        .terminal-header {
+            background: #1e293b;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .red { background: #ff5f56; }
+        .yellow { background: #ffbd2e; }
+        .green { background: #27c93f; }
+        .terminal-logs {
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            color: #4ade80;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
     </style>
 </head>
 <body>
@@ -302,8 +338,21 @@
 
             <div id="loader" class="loader-container">
                 <div class="spinner"></div>
-                <div class="loader-text">Scraping Google Maps...</div>
-                <div class="loader-subtext">Navigating websites to find emails. This might take 1 - 2 minutes.</div>
+                <div class="loader-text">Scraping Engine Running</div>
+                <div class="loader-subtext">Check the live terminal below for progress...</div>
+            </div>
+
+            <!-- Terminal Logs -->
+            <div id="terminalArea" class="terminal-container">
+                <div class="terminal-header">
+                    <span class="dot red"></span>
+                    <span class="dot yellow"></span>
+                    <span class="dot green"></span>
+                    <span style="margin-left: 10px; color: #94a3b8; font-size: 0.8rem; font-family: 'Inter', sans-serif;">Live Scraper Log</span>
+                </div>
+                <div id="terminalLogs" class="terminal-logs">
+                    <div>> System Online... Waiting to initialize scraper.</div>
+                </div>
             </div>
 
             <div id="resultsArea" class="results-area">
@@ -319,6 +368,7 @@
                                 <th>Agency Name</th>
                                 <th>Phone Number</th>
                                 <th>Email</th>
+                                <th>Socials</th>
                                 <th>Website</th>
                             </tr>
                         </thead>
@@ -395,6 +445,8 @@
             // UI State change
             const btn = document.getElementById("scrapeBtn");
             const loader = document.getElementById("loader");
+            const terminalArea = document.getElementById("terminalArea");
+            const terminalLogs = document.getElementById("terminalLogs");
             const resultsArea = document.getElementById("resultsArea");
             const errorMsg = document.getElementById("errorMsg");
 
@@ -403,12 +455,25 @@
             errorMsg.style.display = "none";
             resultsArea.style.display = "none";
             loader.style.display = "flex";
+            terminalArea.style.display = "block";
+            terminalLogs.innerHTML = "<div>> Connecting to secure background agent...</div>";
+
+            // Setup WebSocket
+            const clientId = Math.random().toString(36).substring(7);
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/scrape/${clientId}`;
+            const ws = new WebSocket(wsUrl);
+            
+            ws.onmessage = function(event) {
+                terminalLogs.innerHTML += `<div>> ${event.data}</div>`;
+                terminalLogs.scrollTop = terminalLogs.scrollHeight;
+            };
 
             try {
                 const response = await fetch('/api/scrape', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ location: location, keyword: keyword })
+                    body: JSON.stringify({ location: location, keyword: keyword, client_id: clientId })
                 });
 
                 const data = await response.json();
@@ -460,6 +525,13 @@
                     emailTd.innerText = "-";
                 }
 
+                const socialsTd = document.createElement("td");
+                let socialHtml = "";
+                if (row.Instagram && row.Instagram !== "undefined") socialHtml += `<a href="${row.Instagram}" target="_blank" style="margin-right:5px; color:#e1306c;">IG</a>`;
+                if (row.Facebook && row.Facebook !== "undefined") socialHtml += `<a href="${row.Facebook}" target="_blank" style="margin-right:5px; color:#1877f2;">FB</a>`;
+                if (row.LinkedIn && row.LinkedIn !== "undefined") socialHtml += `<a href="${row.LinkedIn}" target="_blank" style="margin-right:5px; color:#0077b5;">IN</a>`;
+                socialsTd.innerHTML = socialHtml || "-";
+
                 const webTd = document.createElement("td");
                 if (row.Website) {
                     const a = document.createElement("a");
@@ -475,6 +547,7 @@
                 tr.appendChild(nameTd);
                 tr.appendChild(phoneTd);
                 tr.appendChild(emailTd);
+                tr.appendChild(socialsTd);
                 tr.appendChild(webTd);
 
                 tbody.appendChild(tr);
