@@ -40,6 +40,10 @@ class ScrapeRequest(BaseModel):
     keyword: str
     client_id: str
 
+from typing import List
+class BulkDeleteRequest(BaseModel):
+    ids: List[int]
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -112,6 +116,22 @@ def download_all_leads():
             writer.writerows(leads)
             
         return FileResponse(path=filepath, filename=filename, media_type='text/csv')
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.delete("/api/leads/{lead_id}")
+def api_delete_lead(lead_id: int):
+    try:
+        database.delete_lead(lead_id)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/leads/delete_bulk")
+def api_delete_bulk(req: BulkDeleteRequest):
+    try:
+        database.delete_leads_bulk(req.ids)
+        return {"success": True}
     except Exception as e:
         return {"error": str(e)}
 

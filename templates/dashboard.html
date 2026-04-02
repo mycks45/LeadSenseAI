@@ -216,6 +216,31 @@
             font-style: italic;
         }
         
+        /* Deletion Styles */
+        .btn-danger {
+            background: transparent;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            box-shadow: none;
+        }
+        
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        .action-icon {
+            color: #ef4444;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.2s;
+        }
+        
+        .action-icon:hover {
+            color: #ff6b6b;
+            transform: scale(1.1);
+        }
+        
     </style>
 </head>
 <body>
@@ -244,7 +269,10 @@
         <section class="glass-panel">
             <div class="controls">
                 <input type="text" id="searchInput" placeholder="Search across agencies, emails, or websites..." onkeyup="filterTable()">
-                <a href="/api/download_all" class="btn">📥 Download Master CSV</a>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="deleteBulk()" class="btn btn-danger">🗑️ Delete Filtered</button>
+                    <a href="/api/download_all" class="btn">📥 Download Master CSV</a>
+                </div>
             </div>
 
             <div class="table-container">
@@ -257,6 +285,7 @@
                             <th>Email</th>
                             <th>Socials</th>
                             <th>Website</th>
+                            <th style="width: 50px;">Act</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -269,6 +298,7 @@
 
     <script>
         let allLeads = [];
+        let currentView = [];
 
         window.onload = async function() {
             try {
@@ -277,13 +307,14 @@
                 
                 if (data.success) {
                     allLeads = data.leads;
+                    currentView = allLeads;
                     updateStats();
                     renderTable(allLeads);
                 } else {
-                    document.getElementById("tableBody").innerHTML = `<tr><td colspan="6" class="empty-state">Failed to load data: ${data.error}</td></tr>`;
+                    document.getElementById("tableBody").innerHTML = `<tr><td colspan="7" class="empty-state">Failed to load data: ${data.error}</td></tr>`;
                 }
             } catch (error) {
-                document.getElementById("tableBody").innerHTML = `<tr><td colspan="6" class="empty-state">Error connecting to server.</td></tr>`;
+                document.getElementById("tableBody").innerHTML = `<tr><td colspan="7" class="empty-state">Error connecting to server.</td></tr>`;
             }
         };
 
@@ -308,7 +339,7 @@
             const tbody = document.getElementById("tableBody");
             
             if (leads.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No records found. Run a scrape first!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No records found. Run a scrape first!</td></tr>`;
                 return;
             }
 
@@ -356,12 +387,16 @@
                     webTd.innerText = "-";
                 }
 
+                const actionTd = document.createElement("td");
+                actionTd.innerHTML = `<i class="fas fa-trash action-icon" onclick="deleteLead(${row.id})" title="Delete Lead"></i>`;
+
                 tr.appendChild(idTd);
                 tr.appendChild(nameTd);
                 tr.appendChild(phoneTd);
                 tr.appendChild(emailTd);
                 tr.appendChild(socialsTd);
                 tr.appendChild(webTd);
+                tr.appendChild(actionTd);
 
                 tbody.appendChild(tr);
             });
@@ -377,7 +412,57 @@
                     (lead.email && lead.email.toLowerCase().includes(query))
                 );
             });
+            currentView = filtered;
             renderTable(filtered);
+        }
+
+        async function deleteLead(id) {
+            if (!confirm(`Are you sure you want to permanently delete lead #${id}?`)) return;
+            
+            try {
+                const response = await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+                const data = await response.json();
+                if (data.success) {
+                    allLeads = allLeads.filter(l => l.id !== id);
+                    filterTable(); 
+                    updateStats();
+                } else {
+                    alert('Error deleting: ' + data.error);
+                }
+            } catch (e) {
+                alert('Connection error while trying to delete.');
+            }
+        }
+        
+        async function deleteBulk() {
+            if (currentView.length === 0) {
+                alert("No leads currently displayed to delete!");
+                return;
+            }
+            
+            if (!confirm(`CAUTION: You are about to permanently delete ${currentView.length} lead(s). Are you absolutely sure?`)) return;
+            
+            const ids = currentView.map(l => l.id);
+            
+            try {
+                const response = await fetch('/api/leads/delete_bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: ids })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    allLeads = allLeads.filter(l => !ids.includes(l.id));
+                    document.getElementById("searchInput").value = "";
+                    filterTable();
+                    updateStats();
+                } else {
+                    alert('Error deleting: ' + data.error);
+                }
+            } catch (e) {
+                alert('Connection error while performing bulk delete.');
+            }
         }
     </script>
 </body>

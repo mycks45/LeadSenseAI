@@ -66,5 +66,22 @@ def get_all_leads():
     conn.close()
     return [dict(row) for row in rows]
 
+def delete_lead(lead_id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM leads WHERE id = ?", (lead_id,))
+    conn.commit()
+    conn.close()
+
+def delete_leads_bulk(lead_ids):
+    if not lead_ids:
+        return
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    placeholders = ','.join('?' for _ in lead_ids)
+    cursor.execute(f"DELETE FROM leads WHERE id IN ({placeholders})", lead_ids)
+    conn.commit()
+    conn.close()
+
 # Initialize the config
 init_db()
