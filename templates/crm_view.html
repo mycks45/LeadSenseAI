@@ -214,7 +214,7 @@
                     <option value="3">3: MOU Sent</option>
                     <option value="4">4: MOU Signed</option>
                     <option value="5">5: Toolkit Sent</option>
-                    <option value="6">6: Active Follow-up</option>
+                    <option value="6">6: Onboarded</option>
                 </select>
             </div>
         </header>
@@ -243,12 +243,25 @@
                 </div>
                 <div class="step" id="step-6">
                     <div class="step-circle">6</div>
-                    <div class="step-title">Weekly Follow-up</div>
+                    <div class="step-title">Onboarded</div>
                 </div>
             </div>
 
             <div class="action-box" id="actionPanel">
                 <h2>Loading lifecycle actions...</h2>
+            </div>
+
+            <div class="remarks-box" id="remarksPanel" style="margin-top: 2.5rem; text-align: left;">
+                <h3 style="color: var(--accent-primary); border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem; margin-bottom: 1rem;"><i class="fas fa-history"></i> Activity & Remarks Log</h3>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 1.5rem;">
+                    <input type="text" id="remarkInput" placeholder="Add a note, meeting summary, or remark..." style="flex: 1; min-width: 0;">
+                    <button class="btn btn-outline" onclick="addRemark()"><i class="fas fa-plus"></i></button>
+                </div>
+                
+                <div id="remarksList" style="max-height: 250px; overflow-y: auto; padding-right: 10px;">
+                    <!-- Remarks render here -->
+                </div>
             </div>
         </section>
     </div>
@@ -256,6 +269,7 @@
     <script>
         const leadId = {{ lead_id }};
         let leadData = null;
+        let remarksData = [];
 
         window.onload = async function() {
             await fetchLead();
@@ -267,6 +281,7 @@
                 const data = await response.json();
                 if (data.success) {
                     leadData = data.lead;
+                    remarksData = data.remarks || [];
                     renderUI();
                 } else {
                     document.getElementById('agencyName').innerText = "Lead Not Found";
@@ -316,6 +331,9 @@
 
             // Render Active Action Panel
             renderActionPanel(currentStage);
+
+            // Render Log
+            renderRemarks();
         }
 
         function renderActionPanel(stage) {
@@ -374,10 +392,11 @@
                     ? `<span style="color: var(--accent-primary);">Last Follow-up: ${leadData.last_contacted}</span>` 
                     : `<span style="color: #ef4444;">No follow-up logged yet!</span>`;
                     
+                    
                 panel.innerHTML = `
-                    <h2>Step 6: Weekly Follow-up Hub</h2>
-                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">MOU is signed and Toolkit is delivered. Now we strictly follow up once a week.<br> ${lastContactHtml}</p>
-                    <button class="btn btn-outline" onclick="logFollowup()"><i class="fas fa-calendar-check"></i> Log Follow-up Today</button>
+                    <h2>Step 6: Onboarded & Active</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Agency is fully onboarded. Use the activity log below to track ongoing communications.<br> ${lastContactHtml}</p>
+                    <button class="btn btn-outline" onclick="logFollowup()"><i class="fas fa-calendar-check"></i> Log Contact Today</button>
                 `;
             }
         }
@@ -465,6 +484,56 @@
                 // Revert select dropdown visually if cancelled
                 select.value = currentStage;
             }
+        }
+
+        async function addRemark() {
+            const text = document.getElementById('remarkInput').value.trim();
+            if(!text) return;
+            const currentStage = leadData.crm_stage || 0;
+            
+            // disable UI while fetching
+            document.getElementById('remarkInput').disabled = true;
+            try {
+                await fetch(`/api/leads/${leadId}/remarks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stage: currentStage, text: text })
+                });
+                document.getElementById('remarkInput').value = "";
+                await fetchLead(); // Refresh everything to get new remarks
+            } catch(e) {
+                alert("Failed to save remark.");
+            }
+            document.getElementById('remarkInput').disabled = false;
+        }
+
+        function renderRemarks() {
+            const list = document.getElementById('remarksList');
+            if (!remarksData || remarksData.length === 0) {
+                list.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">No remarks logged yet.</p>`;
+                return;
+            }
+            
+            let html = "";
+            remarksData.forEach(r => {
+                const stageNames = ["Uncontacted", "Contacted", "Pitch Area", "MOU Sent", "MOU Signed", "Toolkit Sent", "Onboarded"];
+                const sName = stageNames[r.stage] || "Unknown";
+                
+                // Format timestamp beautifully
+                const d = new Date(r.created_at);
+                const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                html += `
+                <div style="background: rgba(15, 23, 42, 0.4); border-left: 3px solid var(--accent-secondary); padding: 0.8rem; margin-bottom: 0.8rem; border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                        <span style="font-size: 0.75rem; color: var(--accent-primary); font-weight: bold; text-transform: uppercase;">STAGE: ${sName}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">${dateStr}</span>
+                    </div>
+                    <p style="font-size: 0.95rem; margin: 0; line-height: 1.4;">${r.remark}</p>
+                </div>
+                `;
+            });
+            list.innerHTML = html;
         }
 
     </script>

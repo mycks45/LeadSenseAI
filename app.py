@@ -61,6 +61,10 @@ class UpdateEmailRequest(BaseModel):
 class ContactRequest(BaseModel):
     timestamp: str
 
+class AddRemarkRequest(BaseModel):
+    stage: int
+    text: str
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -173,7 +177,17 @@ def api_get_lead(lead_id: int):
         lead = database.get_lead_by_id(lead_id)
         if lead is None:
             return {"error": "Lead not found"}
-        return {"success": True, "lead": lead}
+        
+        remarks = database.get_remarks_for_lead(lead_id)
+        return {"success": True, "lead": lead, "remarks": remarks}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/leads/{lead_id}/remarks")
+def api_add_remark(lead_id: int, req: AddRemarkRequest):
+    try:
+        database.add_remark(lead_id, req.stage, req.text)
+        return {"success": True}
     except Exception as e:
         return {"error": str(e)}
 

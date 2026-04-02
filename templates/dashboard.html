@@ -322,7 +322,7 @@
             </div>
             <div class="stat-card clickable-tile" onclick="filterByStage(6)" id="tile-6">
                 <div class="stat-value" id="statStage6" style="font-size: 1.8rem;">0</div>
-                <div class="stat-label">Follow-ups</div>
+                <div class="stat-label">Onboarded</div>
             </div>
         </div>
 
@@ -434,7 +434,7 @@
                     "Step 3: MOU Sent", 
                     "Step 4: MOU Signed", 
                     "Step 5: Toolkit Sent",
-                    "Step 6: Weekly Follow-up"
+                    "Step 6: Onboarded"
                 ];
                 const stageText = stageNames[row.crm_stage || 0] || stageNames[0];
                 stageTd.innerHTML = `<span style="background: rgba(59, 130, 246, 0.15); color: var(--accent-primary); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; white-space: nowrap;">${stageText}</span>`;

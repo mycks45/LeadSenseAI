@@ -25,6 +25,17 @@ def init_db():
             UNIQUE(name, website)
         )
     ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS remarks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lead_id INTEGER,
+            stage INTEGER,
+            remark TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(lead_id) REFERENCES leads(id) ON DELETE CASCADE
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -122,6 +133,22 @@ def update_last_contacted(lead_id, timestamp):
     cursor.execute("UPDATE leads SET last_contacted = ? WHERE id = ?", (timestamp, lead_id))
     conn.commit()
     conn.close()
+
+def add_remark(lead_id: int, stage: int, remark: str):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO remarks (lead_id, stage, remark) VALUES (?, ?, ?)", (lead_id, stage, remark))
+    conn.commit()
+    conn.close()
+
+def get_remarks_for_lead(lead_id: int):
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM remarks WHERE lead_id = ? ORDER BY created_at DESC", (lead_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 # Initialize the config
 init_db()
