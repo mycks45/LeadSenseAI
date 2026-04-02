@@ -356,8 +356,16 @@
                 nameTd.innerHTML = `<strong><a href="/crm/${row.id}" class="table-link" style="color: var(--text-main); text-decoration: none;">${row.name || "-"}</a></strong> <br><span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt"></i> ${row.location || "Unknown District"}</span>`;
 
                 const stageTd = document.createElement("td");
-                const stageNames = ["New Lead", "Contacted", "Req. Email", "MOU Sent", "MOU Signed", "Follow-up"];
-                const stageText = stageNames[row.crm_stage || 0] || "New Lead";
+                const stageNames = [
+                    "0: Uncontacted",
+                    "Step 1: Contacted", 
+                    "Step 2: Pitch & Email Req.", 
+                    "Step 3: MOU Sent", 
+                    "Step 4: MOU Signed", 
+                    "Step 5: Toolkit Sent",
+                    "Step 6: Weekly Follow-up"
+                ];
+                const stageText = stageNames[row.crm_stage || 0] || stageNames[0];
                 stageTd.innerHTML = `<span style="background: rgba(59, 130, 246, 0.15); color: var(--accent-primary); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; white-space: nowrap;">${stageText}</span>`;
 
                 const phoneTd = document.createElement("td");
