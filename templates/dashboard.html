@@ -355,7 +355,11 @@
                 nameTd.innerHTML = `<strong>${row.name || "-"}</strong> <br><span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt"></i> ${row.location || "Unknown District"}</span>`;
 
                 const phoneTd = document.createElement("td");
-                phoneTd.innerText = row.phone || "-";
+                if (!row.phone || row.phone === "-" || row.phone.trim() === "") {
+                    phoneTd.innerHTML = `<button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addPhone(${row.id})">➕ Phone</button>`;
+                } else {
+                    phoneTd.innerText = row.phone;
+                }
 
                 const emailTd = document.createElement("td");
                 if (row.email) {
@@ -462,6 +466,30 @@
                 }
             } catch (e) {
                 alert('Connection error while performing bulk delete.');
+            }
+        }
+
+        async function addPhone(id) {
+            const newPhone = prompt("Enter the manual phone number for this agency:");
+            if (!newPhone || newPhone.trim() === "") return;
+            
+            try {
+                const response = await fetch(`/api/leads/${id}/phone`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: newPhone.trim() })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const lead = allLeads.find(l => l.id === id);
+                    if (lead) lead.phone = newPhone.trim();
+                    filterTable(); 
+                } else {
+                    alert('Error updating phone: ' + data.error);
+                }
+            } catch (e) {
+                alert('Connection error while saving the phone number.');
             }
         }
     </script>

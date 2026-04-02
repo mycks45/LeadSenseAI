@@ -44,6 +44,9 @@ from typing import List
 class BulkDeleteRequest(BaseModel):
     ids: List[int]
 
+class UpdatePhoneRequest(BaseModel):
+    phone: str
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -131,6 +134,14 @@ def api_delete_lead(lead_id: int):
 def api_delete_bulk(req: BulkDeleteRequest):
     try:
         database.delete_leads_bulk(req.ids)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.put("/api/leads/{lead_id}/phone")
+def api_update_phone(lead_id: int, req: UpdatePhoneRequest):
+    try:
+        database.update_lead_phone(lead_id, req.phone)
         return {"success": True}
     except Exception as e:
         return {"error": str(e)}

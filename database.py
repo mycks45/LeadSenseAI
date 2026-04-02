@@ -83,5 +83,12 @@ def delete_leads_bulk(lead_ids):
     conn.commit()
     conn.close()
 
+def update_lead_phone(lead_id, new_phone):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE leads SET phone = ? WHERE id = ?", (new_phone, lead_id))
+    conn.commit()
+    conn.close()
+
 # Initialize the config
 init_db()
