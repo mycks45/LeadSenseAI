@@ -316,9 +316,27 @@
             line-height: 1.5;
         }
 
+        /* Toast for scraper */
+        #scrapeToast {
+            display: none;
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(16, 185, 129, 0.9);
+            color: #fff;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            z-index: 9999;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            animation: slideIn 0.4s ease;
+        }
+        @keyframes slideIn { from { opacity:0; transform:translateX(60px); } to { opacity:1; transform:translateX(0); } }
     </style>
 </head>
 <body>
+    <div id="scrapeToast"></div>
 
     <div class="container">
         <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
@@ -443,6 +461,13 @@
             }
         }
 
+        function showScrapeToast(msg) {
+            const t = document.getElementById('scrapeToast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 5000);
+        }
+
         async function startScrape() {
             const districtSelect = document.getElementById("districtSelect");
             const stateSelect = document.getElementById("stateSelect");
@@ -504,35 +529,58 @@
             await wsReady;
             terminalLogs.innerHTML += `<div>> Live log connected. Starting scrape engine...</div>`;
 
+            // The scrape now runs in the background — the HTTP call returns immediately
+            // Results arrive via WebSocket as SCRAPE_COMPLETE:{json}
+            let scrapeResolved = false;
+
+            ws.onmessage = function(event) {
+                const msg = event.data;
+                if (msg.startsWith('SCRAPE_COMPLETE:')) {
+                    scrapeResolved = true;
+                    try {
+                        const payload = JSON.parse(msg.slice('SCRAPE_COMPLETE:'.length));
+                        if (payload.error) {
+                            errorMsg.innerText = '⚠️ Scrape Error: ' + payload.error;
+                            errorMsg.style.display = 'block';
+                        } else {
+                            currentFilename = payload.filename;
+                            renderTable(payload.results, payload.count);
+                            resultsArea.style.display = 'block';
+                            // Show toast
+                            showScrapeToast(`✅ Done! ${payload.count} agencies found.`);
+                        }
+                    } catch(e) {
+                        errorMsg.innerText = 'Failed to parse scrape results.';
+                        errorMsg.style.display = 'block';
+                    }
+                    loader.style.display = 'none';
+                    btn.disabled = false;
+                    btn.innerText = 'Start Scraping';
+                    ws.close();
+                } else {
+                    terminalLogs.innerHTML += `<div>> ${msg}</div>`;
+                    terminalLogs.scrollTop = terminalLogs.scrollHeight;
+                }
+            };
+
             try {
                 const response = await fetch('/api/scrape', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ location: location, keyword: keyword, client_id: clientId })
                 });
-
                 const data = await response.json();
-
                 if (data.error) {
                     throw new Error(data.error);
                 }
-
-                if (data.success) {
-                    currentFilename = data.filename;
-                    renderTable(data.results, data.count);
-                    loader.style.display = "none";
-                    resultsArea.style.display = "block";
-                }
-
+                terminalLogs.innerHTML += `<div style="color:#86efac;">> Engine started (Job: ${data.job_id}). Waiting for results...</div>`;
             } catch (error) {
                 console.error(error);
-                errorMsg.innerText = error.message || "An error occurred during scraping. Please try again.";
-                errorMsg.style.display = "block";
-                loader.style.display = "none";
-            } finally {
+                errorMsg.innerText = error.message || 'An error occurred. Please try again.';
+                errorMsg.style.display = 'block';
+                loader.style.display = 'none';
                 btn.disabled = false;
-                btn.innerText = "Start Scraping";
-                ws.close();
+                btn.innerText = 'Start Scraping';
             }
         }
 

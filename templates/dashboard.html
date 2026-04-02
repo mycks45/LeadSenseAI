@@ -264,9 +264,103 @@
             transform: scale(1.1);
         }
         
+        /* Toast Notifications */
+        #toastContainer {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .toast {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            animation: slideIn 0.3s ease;
+            max-width: 360px;
+        }
+        .toast.success { background: rgba(16, 185, 129, 0.85); }
+        .toast.error   { background: rgba(239, 68, 68, 0.85); }
+        .toast.info    { background: rgba(59, 130, 246, 0.85); }
+        @keyframes slideIn { from { opacity:0; transform: translateX(60px); } to { opacity:1; transform: translateX(0); } }
+
+        /* Bulk action bar */
+        #bulkBar {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        /* Export dropdown */
+        .export-dropdown { position: relative; display: inline-block; }
+        .export-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 110%;
+            right: 0;
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            min-width: 200px;
+            z-index: 200;
+            overflow: hidden;
+        }
+        .export-dropdown:hover .export-dropdown-menu { display: block; }
+        .export-dropdown-menu a, .export-dropdown-menu button {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1.2rem;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            text-align: left;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .export-dropdown-menu a:hover, .export-dropdown-menu button:hover { background: rgba(59, 130, 246, 0.15); }
+        .export-dropdown-menu hr { border-color: var(--glass-border); margin: 0; }
+
+        input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-primary); }
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- Bulk Action Bar -->
+    <div id="bulkBar">
+        <span id="bulkCount" style="color: var(--text-muted); font-size: 0.9rem;">0 selected</span>
+        <select id="bulkStageSelect" style="padding: 0.6rem 1rem; border-radius: 8px; background: rgba(30,41,59,0.9); color: #fff; border: 1px solid var(--glass-border); font-size: 0.9rem;">
+            <option value="0">0: Uncontacted</option>
+            <option value="1">1: Contacted</option>
+            <option value="2">2: Pitched</option>
+            <option value="3">3: MOU Sent</option>
+            <option value="4">4: MOU Signed</option>
+            <option value="5">5: Toolkit Sent</option>
+            <option value="6">6: Onboarded</option>
+        </select>
+        <button class="btn" onclick="applyBulkStage()">✓ Apply to Selected</button>
+        <button class="btn btn-outline" onclick="clearSelection()">✕ Cancel</button>
+    </div>
 
     <div class="container">
         <header>
@@ -329,10 +423,23 @@
         <section class="glass-panel" style="margin-top: 1rem;">
             <div class="controls">
                 <input type="text" id="searchInput" placeholder="Search across agencies, emails, or websites..." onkeyup="filterTable()" style="max-width: 400px;">
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button onclick="document.getElementById('manualLeadModal').style.display='flex'" class="btn" style="background: linear-gradient(135deg, #10b981, #059669);">✚ Add Lead</button>
                     <button onclick="deleteBulk()" class="btn btn-danger">🗑️ Delete Filtered</button>
-                    <a href="/api/download_all" class="btn">📥 Export CSV</a>
+                    <div class="export-dropdown">
+                        <button class="btn">📥 Export CSV ▾</button>
+                        <div class="export-dropdown-menu">
+                            <a href="/api/download_all">📋 Export All Leads</a>
+                            <hr>
+                            <button onclick="exportByStage(0)">Export: Uncontacted</button>
+                            <button onclick="exportByStage(1)">Export: Contacted</button>
+                            <button onclick="exportByStage(2)">Export: Pitched</button>
+                            <button onclick="exportByStage(3)">Export: MOU Sent</button>
+                            <button onclick="exportByStage(4)">Export: MOU Signed</button>
+                            <button onclick="exportByStage(5)">Export: Toolkit Sent</button>
+                            <button onclick="exportByStage(6)">Export: Onboarded</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -340,6 +447,7 @@
                 <table id="dataTable">
                     <thead>
                         <tr>
+                            <th style="width:36px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
                             <th>ID</th>
                             <th>Agency Name</th>
                             <th>CRM Stage</th>
@@ -351,7 +459,7 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="6" class="empty-state">Loading database records...</td></tr>
+                        <tr><td colspan="9" class="empty-state">Loading database records...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -378,6 +486,77 @@
         let allLeads = [];
         let currentView = [];
         let activeStageFilter = null;
+        let selectedIds = new Set();
+
+        // Toast System
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), duration);
+        }
+
+        // Export by stage
+        function exportByStage(stage) {
+            window.location.href = `/api/download_filtered?stage=${stage}`;
+        }
+
+        // Checkbox helpers
+        function toggleSelectAll(cb) {
+            selectedIds.clear();
+            document.querySelectorAll('.row-check').forEach(c => {
+                c.checked = cb.checked;
+                if (cb.checked) selectedIds.add(parseInt(c.dataset.id));
+            });
+            updateBulkBar();
+        }
+
+        function onRowCheck(cb) {
+            const id = parseInt(cb.dataset.id);
+            if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+            updateBulkBar();
+        }
+
+        function clearSelection() {
+            selectedIds.clear();
+            document.querySelectorAll('.row-check').forEach(c => c.checked = false);
+            const sa = document.getElementById('selectAll');
+            if (sa) sa.checked = false;
+            updateBulkBar();
+        }
+
+        function updateBulkBar() {
+            const bar = document.getElementById('bulkBar');
+            const count = document.getElementById('bulkCount');
+            count.innerText = `${selectedIds.size} lead(s) selected`;
+            bar.style.display = selectedIds.size > 0 ? 'flex' : 'none';
+        }
+
+        async function applyBulkStage() {
+            const stage = parseInt(document.getElementById('bulkStageSelect').value);
+            const ids = [...selectedIds];
+            if (ids.length === 0) return;
+            try {
+                const res = await fetch('/api/leads/bulk_stage', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ ids, stage })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const stageNames = ["Uncontacted","Contacted","Pitched","MOU Sent","MOU Signed","Toolkit Sent","Onboarded"];
+                    showToast(`✅ ${ids.length} leads moved to Stage ${stage}: ${stageNames[stage]}`, 'success');
+                    clearSelection();
+                    await fetchLeads();
+                } else {
+                    showToast('Error: ' + data.error, 'error');
+                }
+            } catch(e) {
+                showToast('Connection failed.', 'error');
+            }
+        }
 
         window.onload = async function() {
             await fetchLeads();
@@ -441,6 +620,16 @@
             leads.forEach(row => {
                 const tr = document.createElement("tr");
 
+                // Checkbox
+                const checkTd = document.createElement("td");
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'row-check';
+                cb.dataset.id = row.id;
+                cb.checked = selectedIds.has(row.id);
+                cb.onchange = () => onRowCheck(cb);
+                checkTd.appendChild(cb);
+
                 const idTd = document.createElement("td");
                 idTd.innerText = row.id;
 
@@ -501,6 +690,7 @@
                 const actionTd = document.createElement("td");
                 actionTd.innerHTML = `<i class="fas fa-trash action-icon" onclick="deleteLead(${row.id})" title="Delete Lead"></i>`;
 
+                tr.appendChild(checkTd);
                 tr.appendChild(idTd);
                 tr.appendChild(nameTd);
                 tr.appendChild(stageTd);

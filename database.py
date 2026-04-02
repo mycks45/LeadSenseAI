@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_NAME = "leads.db"
+DB_NAME = os.getenv("DB_PATH", "leads.db")
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -181,6 +181,25 @@ def add_manual_lead(name: str, phone: str, email: str, website: str, location: s
     ''', (name, phone, email, website, location))
     conn.commit()
     conn.close()
+
+def bulk_update_stage(lead_ids: list, stage: int):
+    if not lead_ids:
+        return
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    placeholders = ','.join('?' for _ in lead_ids)
+    cursor.execute(f"UPDATE leads SET crm_stage = ? WHERE id IN ({placeholders})", [stage] + list(lead_ids))
+    conn.commit()
+    conn.close()
+
+def get_leads_by_stage(stage: int):
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM leads WHERE crm_stage = ? ORDER BY id DESC", (stage,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
 
 # Initialize the config
 init_db()

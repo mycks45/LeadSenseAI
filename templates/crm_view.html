@@ -206,6 +206,11 @@
                 <h1 id="agencyName">Loading CRM Profile...</h1>
                 <p class="subtitle" id="agencyMeta">Gathering data...</p>
             </div>
+            <!-- Quick-Jump Search -->
+            <div style="position: relative; margin-right: 1rem;">
+                <input type="text" id="crmSearch" placeholder="Jump to lead..." oninput="searchLeads(this.value)" style="padding: 0.5rem 0.9rem; border-radius: 10px; width: 200px;" autocomplete="off">
+                <div id="crmSearchDropdown" style="display:none; position: absolute; top: 110%; left: 0; right: 0; background: rgba(15,23,42,0.98); border: 1px solid var(--glass-border); border-radius: 10px; z-index: 300; max-height: 250px; overflow-y: auto;"></div>
+            </div>
             <div>
                 <select id="stageOverride" class="btn btn-outline" style="padding: 0.6rem 1rem; cursor: pointer; color: var(--accent-primary); border-color: var(--accent-primary);" onchange="manuallyOverrideStage()">
                     <option value="0">0: New Lead</option>
@@ -598,6 +603,42 @@
                 alert("Clipboard access failed. Please copy manually.");
             }
         }
+
+        // CRM Quick-Jump Search
+        let allLeadsCache = null;
+
+        async function searchLeads(query) {
+            const dd = document.getElementById('crmSearchDropdown');
+            if (!query.trim()) { dd.style.display = 'none'; return; }
+            
+            if (!allLeadsCache) {
+                const res = await fetch('/api/leads');
+                const d = await res.json();
+                allLeadsCache = d.leads || [];
+            }
+            
+            const q = query.toLowerCase();
+            const matches = allLeadsCache.filter(l => l.name && l.name.toLowerCase().includes(q)).slice(0, 8);
+            
+            if (matches.length === 0) {
+                dd.style.display = 'none'; return;
+            }
+            
+            dd.innerHTML = matches.map(l => `
+                <div onclick="window.location='/crm/${l.id}'" style="padding: 0.7rem 1rem; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(59,130,246,0.15)'" onmouseout="this.style.background='none'">
+                    <div style="font-weight:600; font-size:0.9rem;">${l.name}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">${l.location || ''}</div>
+                </div>
+            `).join('');
+            dd.style.display = 'block';
+        }
+
+        // Close dropdown on outside click
+        document.addEventListener('click', e => {
+            if (!document.getElementById('crmSearch').contains(e.target)) {
+                document.getElementById('crmSearchDropdown').style.display = 'none';
+            }
+        });
 
     </script>
 </body>

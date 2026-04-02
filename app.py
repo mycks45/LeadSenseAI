@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -49,6 +49,10 @@ from typing import List
 class BulkDeleteRequest(BaseModel):
     ids: List[int]
 
+class BulkStageRequest(BaseModel):
+    ids: List[int]
+    stage: int
+
 class UpdatePhoneRequest(BaseModel):
     phone: str
 
@@ -80,7 +84,7 @@ async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/api/scrape")
-async def start_scrape(scrape_request: ScrapeRequest):
+async def start_scrape(scrape_request: ScrapeRequest, background_tasks: BackgroundTasks):
     location = scrape_request.location.strip()
     keyword = scrape_request.keyword.strip()
     client_id = scrape_request.client_id
@@ -97,23 +101,29 @@ async def start_scrape(scrape_request: ScrapeRequest):
                 await ws.send_text(msg)
             except Exception:
                 pass
-                
-    try:
-        data = await scrape_google_maps(location, keyword, log_callback)
-        if not data or not data.get("filename"):
-            return {"error": "Failed to scrape any data or zero results found."}
-            
-        return {
-            "success": True,
-            "results": data["results"],
-            "filename": data["filename"],
-            "count": len(data["results"])
-        }
-    except Exception as e:
-        import traceback
-        err_detail = traceback.format_exc()
-        print(f"[SCRAPE ERROR] {err_detail}")
-        return {"error": f"Scraping crashed: {str(e)}"}
+
+    async def run_scrape():
+        try:
+            data = await scrape_google_maps(location, keyword, log_callback)
+            ws = active_sockets.get(client_id)
+            if ws:
+                if data and data.get("results"):
+                    import json
+                    payload = json.dumps({"results": data["results"], "filename": data["filename"], "count": len(data["results"])})
+                    await ws.send_text(f"SCRAPE_COMPLETE:{payload}")
+                else:
+                    await ws.send_text("SCRAPE_COMPLETE:{\"error\": \"No results found.\"}")
+        except Exception as e:
+            import traceback
+            err_detail = traceback.format_exc()
+            print(f"[SCRAPE ERROR] {err_detail}")
+            ws = active_sockets.get(client_id)
+            if ws:
+                import json
+                await ws.send_text(f"SCRAPE_COMPLETE:{json.dumps({'error': str(e)})}")
+
+    background_tasks.add_task(run_scrape)
+    return {"success": True, "status": "started", "job_id": client_id}
 
 @app.get("/download/{filename}")
 async def download_file(filename: str):
@@ -166,6 +176,32 @@ def api_delete_bulk(req: BulkDeleteRequest):
     try:
         database.delete_leads_bulk(req.ids)
         return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/leads/bulk_stage")
+def api_bulk_stage(req: BulkStageRequest):
+    try:
+        database.bulk_update_stage(req.ids, req.stage)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/download_filtered")
+def download_filtered_leads(stage: int):
+    try:
+        leads = database.get_leads_by_stage(stage)
+        if not leads:
+            return {"error": "No leads found for this stage."}
+        stage_names = ["Uncontacted", "Contacted", "Pitched", "MOU_Sent", "MOU_Signed", "Toolkit_Sent", "Onboarded"]
+        stage_label = stage_names[stage] if stage < len(stage_names) else f"Stage_{stage}"
+        filename = f"leadsense_stage_{stage}_{stage_label}.csv"
+        filepath = os.path.join(os.getcwd(), filename)
+        with open(filepath, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=leads[0].keys())
+            writer.writeheader()
+            writer.writerows(leads)
+        return FileResponse(path=filepath, filename=filename, media_type='text/csv')
     except Exception as e:
         return {"error": str(e)}
 
