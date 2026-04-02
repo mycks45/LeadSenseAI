@@ -202,9 +202,20 @@
     <div class="container">
         <header>
             <a href="/dashboard" class="btn btn-outline" style="padding: 0.6rem 1.2rem;">← Back</a>
-            <div>
+            <div style="flex: 1;">
                 <h1 id="agencyName">Loading CRM Profile...</h1>
                 <p class="subtitle" id="agencyMeta">Gathering data...</p>
+            </div>
+            <div>
+                <select id="stageOverride" class="btn btn-outline" style="padding: 0.6rem 1rem; cursor: pointer; color: var(--accent-primary); border-color: var(--accent-primary);" onchange="manuallyOverrideStage()">
+                    <option value="0">0: New Lead</option>
+                    <option value="1">1: Contacted</option>
+                    <option value="2">2: Pitched & Req Email</option>
+                    <option value="3">3: MOU Sent</option>
+                    <option value="4">4: MOU Signed</option>
+                    <option value="5">5: Toolkit Sent</option>
+                    <option value="6">6: Active Follow-up</option>
+                </select>
             </div>
         </header>
 
@@ -286,6 +297,7 @@
 
             // Update Stepper Visuals
             const currentStage = leadData.crm_stage || 0;
+            document.getElementById('stageOverride').value = currentStage;
             
             for (let i = 1; i <= 6; i++) {
                 const step = document.getElementById(`step-${i}`);
@@ -437,6 +449,21 @@
                 await fetchLead();
             } catch(e) {
                 alert("Failed to log contact.");
+            }
+        }
+
+        async function manuallyOverrideStage() {
+            const select = document.getElementById('stageOverride');
+            const newStage = parseInt(select.value);
+            const currentStage = leadData.crm_stage || 0;
+            
+            if (newStage === currentStage) return; // No change
+            
+            if (confirm(`Are you sure you want to manually force the CRM stage to Step ${newStage}?`)) {
+                await updateStage(newStage);
+            } else {
+                // Revert select dropdown visually if cancelled
+                select.value = currentStage;
             }
         }
 

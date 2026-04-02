@@ -281,6 +281,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Agency Name</th>
+                            <th>CRM Stage</th>
                             <th>Phone Number</th>
                             <th>Email</th>
                             <th>Socials</th>
@@ -311,10 +312,10 @@
                     updateStats();
                     renderTable(allLeads);
                 } else {
-                    document.getElementById("tableBody").innerHTML = `<tr><td colspan="7" class="empty-state">Failed to load data: ${data.error}</td></tr>`;
+                    document.getElementById("tableBody").innerHTML = `<tr><td colspan="8" class="empty-state">Failed to load data: ${data.error}</td></tr>`;
                 }
             } catch (error) {
-                document.getElementById("tableBody").innerHTML = `<tr><td colspan="7" class="empty-state">Error connecting to server.</td></tr>`;
+                document.getElementById("tableBody").innerHTML = `<tr><td colspan="8" class="empty-state">Error connecting to server.</td></tr>`;
             }
         };
 
@@ -339,7 +340,7 @@
             const tbody = document.getElementById("tableBody");
             
             if (leads.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No records found. Run a scrape first!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No records found. Run a scrape first!</td></tr>`;
                 return;
             }
 
@@ -353,6 +354,11 @@
 
                 const nameTd = document.createElement("td");
                 nameTd.innerHTML = `<strong><a href="/crm/${row.id}" class="table-link" style="color: var(--text-main); text-decoration: none;">${row.name || "-"}</a></strong> <br><span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt"></i> ${row.location || "Unknown District"}</span>`;
+
+                const stageTd = document.createElement("td");
+                const stageNames = ["New Lead", "Contacted", "Req. Email", "MOU Sent", "MOU Signed", "Follow-up"];
+                const stageText = stageNames[row.crm_stage || 0] || "New Lead";
+                stageTd.innerHTML = `<span style="background: rgba(59, 130, 246, 0.15); color: var(--accent-primary); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; white-space: nowrap;">${stageText}</span>`;
 
                 const phoneTd = document.createElement("td");
                 if (!row.phone || row.phone === "-" || row.phone.trim() === "") {
@@ -397,6 +403,7 @@
 
                 tr.appendChild(idTd);
                 tr.appendChild(nameTd);
+                tr.appendChild(stageTd);
                 tr.appendChild(phoneTd);
                 tr.appendChild(emailTd);
                 tr.appendChild(socialsTd);
