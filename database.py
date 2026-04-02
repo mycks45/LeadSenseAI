@@ -36,6 +36,13 @@ def init_db():
             FOREIGN KEY(lead_id) REFERENCES leads(id) ON DELETE CASCADE
         )
     ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS templates (
+            id TEXT PRIMARY KEY,
+            content TEXT
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -149,6 +156,31 @@ def get_remarks_for_lead(lead_id: int):
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def get_template(template_id: str):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT content FROM templates WHERE id = ?", (template_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else ""
+
+def save_template(template_id: str, content: str):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO templates (id, content) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET content=excluded.content", (template_id, content))
+    conn.commit()
+    conn.close()
+
+def add_manual_lead(name: str, phone: str, email: str, website: str, location: str):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO leads (name, phone, email, website, location, crm_stage)
+        VALUES (?, ?, ?, ?, ?, 0)
+    ''', (name, phone, email, website, location))
+    conn.commit()
+    conn.close()
 
 # Initialize the config
 init_db()

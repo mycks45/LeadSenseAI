@@ -65,6 +65,16 @@ class AddRemarkRequest(BaseModel):
     stage: int
     text: str
 
+class AddLeadRequest(BaseModel):
+    name: str
+    phone: str
+    email: str
+    website: str = ""
+    location: str = ""
+
+class TemplateRequest(BaseModel):
+    content: str
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -152,6 +162,29 @@ def api_delete_lead(lead_id: int):
 def api_delete_bulk(req: BulkDeleteRequest):
     try:
         database.delete_leads_bulk(req.ids)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/leads")
+def api_add_manual_lead(req: AddLeadRequest):
+    try:
+        database.add_manual_lead(req.name, req.phone, req.email, req.website, req.location)
+        return {"success": True}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/templates/{template_id}")
+def api_get_template(template_id: str):
+    try:
+        return {"success": True, "content": database.get_template(template_id)}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.put("/api/templates/{template_id}")
+def api_save_template(template_id: str, req: TemplateRequest):
+    try:
+        database.save_template(template_id, req.content)
         return {"success": True}
     except Exception as e:
         return {"error": str(e)}
