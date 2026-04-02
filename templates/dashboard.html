@@ -216,6 +216,22 @@
             font-style: italic;
         }
         
+        .clickable-tile {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .clickable-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+            border-color: var(--accent-primary);
+        }
+        
+        .clickable-tile.active-filter {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15));
+            border-color: var(--accent-primary);
+        }
+
         /* Deletion Styles */
         .btn-danger {
             background: transparent;
@@ -266,7 +282,44 @@
             </div>
         </div>
 
-        <section class="glass-panel">
+        <h3 style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">CRM Pipeline Stages</h3>
+        
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+            <div class="stat-card clickable-tile active-filter" onclick="filterByStage(null)" id="tile-all">
+                <div class="stat-value" id="statStageAll" style="font-size: 1.8rem;">0</div>
+                <div class="stat-label">All Leads</div>
+            </div>
+            <div class="stat-card clickable-tile" onclick="filterByStage(0)" id="tile-0">
+                <div class="stat-value" id="statStage0" style="font-size: 1.8rem;">0</div>
+                <div class="stat-label">Uncontacted</div>
+            </div>
+            <div class="stat-card clickable-tile" onclick="filterByStage(1)" id="tile-1">
+                <div class="stat-value" id="statStage1" style="font-size: 1.8rem;">0</div>
+                <div class="stat-label">Contacted</div>
+            </div>
+            <div class="stat-card clickable-tile" onclick="filterByStage(2)" id="tile-2">
+                <div class="stat-value" id="statStage2" style="font-size: 1.8rem;">0</div>
+                <div class="stat-label">Pitch Area</div>
+            </div>
+            <div class="stat-card clickable-tile" onclick="filterByStage(3)" id="tile-3">
+                <div class="stat-value" id="statStage3" style="font-size: 1.8rem;">0</div>
+                <div class="stat-label">MOU Sent</div>
+            </div>
+            <div class="stat-card clickable-tile" onclick="filterByStage(4)" id="tile-4">
+                <div class="stat-value" id="statStage4" style="font-size: 1.8rem;">0</div>
+                <div class="stat-label">MOU Signed</div>
+            </div>
+            <div class="stat-card clickable-tile" onclick="filterByStage(5)" id="tile-5">
+                <div class="stat-value" id="statStage5" style="font-size: 1.8rem;">0</div>
+                <div class="stat-label">Toolkit Sent</div>
+            </div>
+            <div class="stat-card clickable-tile" onclick="filterByStage(6)" id="tile-6">
+                <div class="stat-value" id="statStage6" style="font-size: 1.8rem;">0</div>
+                <div class="stat-label">Follow-ups</div>
+            </div>
+        </div>
+
+        <section class="glass-panel" style="margin-top: 1rem;">
             <div class="controls">
                 <input type="text" id="searchInput" placeholder="Search across agencies, emails, or websites..." onkeyup="filterTable()">
                 <div style="display: flex; gap: 10px;">
@@ -300,6 +353,7 @@
     <script>
         let allLeads = [];
         let currentView = [];
+        let activeStageFilter = null;
 
         window.onload = async function() {
             try {
@@ -324,16 +378,26 @@
             
             let emailCount = 0;
             let socialCount = 0;
+            let stageCounts = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0};
             
             allLeads.forEach(lead => {
                 if (lead.email && lead.email.trim() !== '') emailCount++;
                 if (lead.instagram) socialCount++;
                 if (lead.facebook) socialCount++;
                 if (lead.linkedin) socialCount++;
+                
+                let s = lead.crm_stage || 0;
+                stageCounts[s] = (stageCounts[s] || 0) + 1;
             });
             
             document.getElementById("statEmails").innerText = emailCount;
             document.getElementById("statSocials").innerText = socialCount;
+            
+            document.getElementById("statStageAll").innerText = allLeads.length;
+            for(let i=0; i<=6; i++) {
+                const el = document.getElementById(`statStage${i}`);
+                if(el) el.innerText = stageCounts[i];
+            }
         }
 
         function renderTable(leads) {
@@ -422,15 +486,33 @@
             });
         }
 
+        function filterByStage(stage) {
+            activeStageFilter = stage;
+            
+            // update UI classes
+            document.querySelectorAll('.clickable-tile').forEach(t => t.classList.remove('active-filter'));
+            if (stage === null) {
+                document.getElementById('tile-all').classList.add('active-filter');
+            } else {
+                document.getElementById(`tile-${stage}`).classList.add('active-filter');
+            }
+            
+            filterTable();
+        }
+
         function filterTable() {
             const query = document.getElementById("searchInput").value.toLowerCase();
             const filtered = allLeads.filter(lead => {
-                return (
+                const matchesSearch = (
                     (lead.name && lead.name.toLowerCase().includes(query)) ||
                     (lead.location && lead.location.toLowerCase().includes(query)) ||
                     (lead.website && lead.website.toLowerCase().includes(query)) ||
                     (lead.email && lead.email.toLowerCase().includes(query))
                 );
+                
+                const matchesStage = activeStageFilter === null || (lead.crm_stage || 0) === activeStageFilter;
+                
+                return matchesSearch && matchesStage;
             });
             currentView = filtered;
             renderTable(filtered);
