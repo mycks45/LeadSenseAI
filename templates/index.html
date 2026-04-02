@@ -473,9 +473,9 @@
             resultsArea.style.display = "none";
             loader.style.display = "flex";
             terminalArea.style.display = "block";
-            terminalLogs.innerHTML = "<div>> Connecting to secure background agent...</div>";
+            terminalLogs.innerHTML = "<div>> Connecting to live log stream...</div>";
 
-            // Setup WebSocket
+            // Setup WebSocket with a promise so we wait for it to open before scraping
             const clientId = Math.random().toString(36).substring(7);
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws/scrape/${clientId}`;
@@ -485,6 +485,24 @@
                 terminalLogs.innerHTML += `<div>> ${event.data}</div>`;
                 terminalLogs.scrollTop = terminalLogs.scrollHeight;
             };
+
+            ws.onerror = function() {
+                terminalLogs.innerHTML += `<div style="color:#f87171;">> [Warning] Live log stream disconnected. Scraping continues silently in background...</div>`;
+            };
+
+            ws.onclose = function() {
+                terminalLogs.innerHTML += `<div style="color:#facc15;">> Live log stream closed.</div>`;
+            };
+
+            // Wait for WS to open (max 5s), then kick off the scrape
+            const wsReady = new Promise((resolve) => {
+                if (ws.readyState === WebSocket.OPEN) return resolve();
+                ws.onopen = () => resolve();
+                setTimeout(resolve, 5000); // fallback: start after 5s regardless
+            });
+
+            await wsReady;
+            terminalLogs.innerHTML += `<div>> Live log connected. Starting scrape engine...</div>`;
 
             try {
                 const response = await fetch('/api/scrape', {
@@ -514,6 +532,7 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Start Scraping";
+                ws.close();
             }
         }
 
