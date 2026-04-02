@@ -214,7 +214,7 @@ async def scrape_google_maps(location, keyword="MBBS abroad consultant", log_cal
             
         output_file = f"{location.replace(' ', '_').lower()}_agencies.csv"
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=["Name", "Phone", "Website", "Email", "Instagram", "Facebook", "LinkedIn"])
+            writer = csv.DictWriter(f, fieldnames=["Name", "Phone", "Website", "Email", "Instagram", "Facebook", "LinkedIn", "Location"])
             writer.writeheader()
             writer.writerows(results)
             
